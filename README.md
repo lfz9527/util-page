@@ -15,7 +15,7 @@
 
 浏览器直接打开 `idcard-generator.html` 即可，零依赖。
 
-在线访问：<a href="https://lfz9527.github.io/util-page/idcard-generator.html" target="_blank">身份证生成器</a>
+在线访问：<a href="https://lfz9527.github.io/util-page/idcard-generator.html" target="_blank" rel="nofollow">身份证生成器</a>
 
 ## 免责声明
 
