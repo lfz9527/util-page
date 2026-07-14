@@ -755,13 +755,113 @@ elYear.value = '1990';
 elMonth.value = '1';
 refreshDays();
 elDay.value = '1';
-elProvince.value = '北京市';
-onProvinceChange();
-elCity.value = '市辖区';
-onCityChange();
-elDistrict.value = '110101';
-onDistrictChange();
-renderResult();
+
+/* --- 默认地址：定位 or 随机 --- */
+function setRandomAddress() {
+  var provinceNames = Object.keys(REGION_DATA);
+  var prov = randomPick(provinceNames);
+  elProvince.value = prov;
+  onProvinceChange();
+  var cityNames = Object.keys(REGION_DATA[prov].cities);
+  var city = randomPick(cityNames);
+  elCity.value = city;
+  onCityChange();
+  var districtEntries = Object.entries(REGION_DATA[prov].cities[city].districts);
+  elDistrict.value = randomPick(districtEntries)[1];
+  onDistrictChange();
+}
+
+/** 根据经纬度粗略匹配省份（各省级行政区中心点参考范围） */
+function guessProvinceByCoords(lat, lng) {
+  // 各行政区粗略经纬度范围 [minLat, maxLat, minLng, maxLng]
+  var ranges = [
+    ['北京市', 39.4, 41.1, 115.4, 117.5],
+    ['天津市', 38.5, 40.3, 116.7, 118.0],
+    ['河北省', 36.0, 42.6, 113.5, 119.8],
+    ['山西省', 34.5, 40.7, 110.2, 114.5],
+    ['内蒙古自治区', 37.4, 53.3, 97.2, 126.1],
+    ['辽宁省', 38.7, 43.5, 118.8, 125.8],
+    ['吉林省', 40.8, 46.3, 121.6, 131.3],
+    ['黑龙江省', 43.4, 53.6, 121.2, 135.1],
+    ['上海市', 30.7, 31.5, 120.8, 122.2],
+    ['江苏省', 30.8, 35.2, 116.3, 121.9],
+    ['浙江省', 27.0, 31.2, 118.0, 123.0],
+    ['安徽省', 29.4, 34.6, 114.9, 119.6],
+    ['福建省', 23.5, 28.3, 115.8, 120.7],
+    ['江西省', 24.5, 30.1, 113.6, 118.5],
+    ['山东省', 34.3, 38.4, 114.8, 122.7],
+    ['河南省', 31.4, 36.4, 110.4, 116.7],
+    ['湖北省', 29.0, 33.3, 108.3, 116.2],
+    ['湖南省', 24.6, 30.1, 108.8, 114.3],
+    ['广东省', 20.2, 25.5, 109.6, 117.3],
+    ['广西壮族自治区', 20.9, 26.4, 104.4, 112.1],
+    ['海南省', 18.1, 20.2, 108.6, 111.0],
+    ['重庆市', 28.2, 32.2, 105.3, 110.2],
+    ['四川省', 26.0, 34.3, 97.4, 108.5],
+    ['贵州省', 24.6, 29.2, 103.6, 109.6],
+    ['云南省', 21.1, 29.3, 97.5, 106.2],
+    ['西藏自治区', 26.8, 36.5, 78.4, 99.0],
+    ['陕西省', 31.7, 39.6, 105.5, 111.2],
+    ['甘肃省', 32.6, 42.8, 92.4, 108.8],
+    ['青海省', 31.4, 39.3, 89.4, 103.0],
+    ['宁夏回族自治区', 35.2, 39.4, 104.3, 107.7],
+    ['新疆维吾尔自治区', 34.3, 49.2, 73.5, 96.4],
+    ['台湾省', 21.9, 25.3, 120.0, 122.0],
+    ['香港特别行政区', 22.1, 22.6, 113.8, 114.4],
+    ['澳门特别行政区', 22.0, 22.2, 113.5, 113.6]
+  ];
+  for (var ri = 0; ri < ranges.length; ri++) {
+    var r = ranges[ri];
+    if (lat >= r[1] && lat <= r[2] && lng >= r[3] && lng <= r[4]) {
+      return r[0];
+    }
+  }
+  // 未精确匹配，选中心最近
+  var best = null;
+  var bestDist = Infinity;
+  for (var ci = 0; ci < ranges.length; ci++) {
+    var rc = ranges[ci];
+    var cLat = (rc[1] + rc[2]) / 2;
+    var cLng = (rc[3] + rc[4]) / 2;
+    var d = (lat - cLat) * (lat - cLat) + (lng - cLng) * (lng - cLng);
+    if (d < bestDist) { bestDist = d; best = rc[0]; }
+  }
+  return best;
+}
+
+function setDefaultAddress() {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      function(pos) {
+        var prov = guessProvinceByCoords(pos.coords.latitude, pos.coords.longitude);
+        if (prov && REGION_DATA[prov]) {
+          elProvince.value = prov;
+          onProvinceChange();
+          var cityNames = Object.keys(REGION_DATA[prov].cities);
+          var city = randomPick(cityNames);
+          elCity.value = city;
+          onCityChange();
+          var districtEntries = Object.entries(REGION_DATA[prov].cities[city].districts);
+          elDistrict.value = randomPick(districtEntries)[1];
+          onDistrictChange();
+        } else {
+          setRandomAddress();
+        }
+        renderResult();
+      },
+      function() {
+        // 定位失败 → 随机
+        setRandomAddress();
+        renderResult();
+      },
+      { timeout: 5000 }
+    );
+  } else {
+    setRandomAddress();
+    renderResult();
+  }
+}
+setDefaultAddress();
 
 /* --- 批量生成 --- */
 
