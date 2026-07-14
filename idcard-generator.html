@@ -506,6 +506,7 @@ const elGender = $('gender');
 const elBtnGenerate = $('btn-generate');
 const elBtnBatch = $('btn-batch');
 const elBtnBatchRandom = $('btn-batch-random');
+const elBtnRandom = $('btn-random');
 const elBatchCount = $('batch-count');
 const elHintAddress = $('hint-address');
 const elResultContainer = $('result-container');
@@ -673,7 +674,7 @@ function randomPick(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-$('btn-random').addEventListener('click', function() {
+elBtnRandom.addEventListener('click', function() {
   // 随机性别
   elGender.value = Math.random() < 0.5 ? 'male' : 'female';
 
@@ -819,6 +820,7 @@ elBtnBatch.addEventListener('click', function() {
   elBtnBatch.disabled = true;
   elBtnBatchRandom.disabled = true;
   elBtnGenerate.disabled = true;
+  elBtnRandom.disabled = true;
   elBatchProgress.style.display = 'block';
   elProgressFill.style.width = '0%';
   elProgressText.textContent = '0 / ' + count;
@@ -834,6 +836,7 @@ elBtnBatch.addEventListener('click', function() {
       elBtnBatch.disabled = false;
       elBtnBatchRandom.disabled = false;
       elBtnGenerate.disabled = false;
+      elBtnRandom.disabled = false;
       return;
     }
     batchData.push(buildRecord(gender, year, month, day, regionCode, provinceName, cityName));
@@ -876,6 +879,7 @@ elBtnBatchRandom.addEventListener('click', function() {
   elBtnBatch.disabled = true;
   elBtnBatchRandom.disabled = true;
   elBtnGenerate.disabled = true;
+  elBtnRandom.disabled = true;
   elBatchProgress.style.display = 'block';
   elProgressFill.style.width = '0%';
   elProgressText.textContent = '0 / ' + count;
@@ -890,6 +894,7 @@ elBtnBatchRandom.addEventListener('click', function() {
       elBtnBatch.disabled = false;
       elBtnBatchRandom.disabled = false;
       elBtnGenerate.disabled = false;
+      elBtnRandom.disabled = false;
       return;
     }
     batchData.push(randomBatchRecord());
