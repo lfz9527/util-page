@@ -753,6 +753,7 @@ elBtnBatch.addEventListener('click', function() {
   elFieldChecks.style.display = 'flex';
   elBatchArea.style.display = 'none';
   elBtnBatch.disabled = true;
+  elBtnGenerate.disabled = true;
   elBatchProgress.style.display = 'block';
   elProgressFill.style.width = '0%';
   elProgressText.textContent = '0 / ' + count;
@@ -766,6 +767,7 @@ elBtnBatch.addEventListener('click', function() {
       elBtnExport.style.display = 'inline-block';
       renderBatchTable();
       elBtnBatch.disabled = false;
+      elBtnGenerate.disabled = false;
       return;
     }
     batchData.push(buildRecord(gender, year, month, day, regionCode, provinceName, cityName));
