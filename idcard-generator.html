@@ -14,7 +14,13 @@ body {
   justify-content: center;
   padding: 40px 16px;
 }
-.container { width: 100%; max-width: 480px; }
+.container { width: 100%; max-width: 960px; }
+
+.main-row {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
 
 /* 卡片通用 */
 .card {
@@ -22,7 +28,8 @@ body {
   border-radius: 12px;
   padding: 28px 24px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  margin-bottom: 20px;
+  flex: 1;
+  min-width: 0;
 }
 .card-title {
   font-size: 16px;
@@ -154,13 +161,24 @@ body {
   text-align: center;
   color: #999;
   font-size: 12px;
-  padding: 0 8px;
+  padding: 0 8px 16px;
   line-height: 1.6;
+}
+
+/* 小屏适配 */
+@media (max-width: 700px) {
+  .main-row {
+    flex-direction: column;
+  }
 }
 </style>
 </head>
 <body>
 <div class="container">
+
+  <p class="disclaimer">免责声明：本工具仅用于软件测试、数据模拟等合法用途。生成的身份证号码、姓名均为虚拟数据，请勿用于非法目的。</p>
+
+<div class="main-row">
 
   <!-- 控制面板 -->
   <div class="card">
@@ -200,7 +218,9 @@ body {
     </div>
   </div>
 
-  <p class="disclaimer">免责声明：本工具仅用于软件测试、数据模拟等合法用途。生成的身份证号码、姓名均为虚拟数据，请勿用于非法目的。</p>
+</div><!-- .main-row -->
+
+</div>
 
 </div>
 
@@ -423,12 +443,12 @@ function renderResult() {
   const genderText = gender === 'male' ? '男' : '女';
 
   elResultContainer.innerHTML =
+    '<div class="result-item"><span class="result-label">身份证号</span><span class="result-value id-number">' + idNumber + '</span><button class="btn-copy" onclick="copyIdNumber(this,\'' + idNumber + '\')">复制</button></div>' +
     '<div class="result-item"><span class="result-label">姓名</span><span class="result-value">' + name + '</span></div>' +
     '<div class="result-item"><span class="result-label">性别</span><span class="result-value">' + genderText + '</span></div>' +
     '<div class="result-item"><span class="result-label">民族</span><span class="result-value">汉族</span></div>' +
     '<div class="result-item"><span class="result-label">出生日期</span><span class="result-value">' + year + '年' + month + '月' + day + '日</span></div>' +
-    '<div class="result-item"><span class="result-label">住址</span><span class="result-value">' + fullAddress + '</span></div>' +
-    '<div class="result-item"><span class="result-label">身份证号</span><span class="result-value id-number">' + idNumber + '</span><button class="btn-copy" onclick="copyIdNumber(this,\'' + idNumber + '\')">复制</button></div>';
+    '<div class="result-item"><span class="result-label">住址</span><span class="result-value">' + fullAddress + '</span></div>';
 }
 
 elBtnGenerate.addEventListener('click', renderResult);
