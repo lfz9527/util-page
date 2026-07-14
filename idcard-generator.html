@@ -189,6 +189,19 @@ body {
   text-align: center;
   margin-top: 4px;
 }
+.btn-cancel-batch {
+  display: block;
+  margin: 8px auto 0;
+  padding: 4px 16px;
+  border: 1px solid #ff4d4f;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #ff4d4f;
+  background: #fff2f0;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-cancel-batch:hover { background: #ffd8d6; }
 
 /* 字段选择 */
 .field-checks {
@@ -379,6 +392,7 @@ body {
     <div id="batch-progress" style="display:none;margin-top:12px">
       <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
       <div class="progress-text" id="progress-text">0 / 10</div>
+      <button id="btn-cancel-batch" class="btn-cancel-batch" style="display:none">取消</button>
     </div>
   </div>
 
@@ -517,7 +531,9 @@ const elBtnExport = $('btn-export');
 const elBatchProgress = $('batch-progress');
 const elProgressFill = $('progress-fill');
 const elProgressText = $('progress-text');
+const elBtnCancelBatch = $('btn-cancel-batch');
 let batchData = [];
+let batchTimer = 0; // requestAnimationFrame id, 用于取消批量生成
 
 /* --- 地区三级联动 --- */
 function initProvinces() {
@@ -801,6 +817,22 @@ document.querySelectorAll('.export-field').forEach(function(cb) {
   });
 });
 
+/* --- 取消批量 --- */
+function cancelBatch() {
+  cancelAnimationFrame(batchTimer);
+  batchTimer = 0;
+  elBatchProgress.style.display = 'none';
+  elBtnCancelBatch.style.display = 'none';
+  elResultContainer.style.display = 'block';
+  elFieldChecks.style.display = 'none';
+  elBatchArea.style.display = 'none';
+  elBtnGenerate.disabled = false;
+  elBtnRandom.disabled = false;
+  elBtnBatch.disabled = false;
+  elBtnBatchRandom.disabled = false;
+}
+elBtnCancelBatch.addEventListener('click', cancelBatch);
+
 elBtnBatch.addEventListener('click', function() {
   var gender = elGender.value;
   var year = elYear.value;
@@ -822,27 +854,37 @@ elBtnBatch.addEventListener('click', function() {
   elBtnGenerate.disabled = true;
   elBtnRandom.disabled = true;
   elBatchProgress.style.display = 'block';
+  elBtnCancelBatch.style.display = 'inline-block';
   elProgressFill.style.width = '0%';
   elProgressText.textContent = '0 / ' + count;
 
-  // 同步循环生成，每 50 条刷新一次进度
-  var throttle = Math.max(1, Math.floor(count / 100));
-  for (var i = 0; i < count; i++) {
-    batchData.push(buildRecord(gender, year, month, day, regionCode, provinceName, cityName));
-    if ((i + 1) % throttle === 0 || i === count - 1) {
-      elProgressFill.style.width = Math.round((i + 1) / count * 100) + '%';
-      elProgressText.textContent = (i + 1) + ' / ' + count;
+  var perFrame = Math.max(1, Math.floor(count / 60));
+  var i = 0;
+  function step() {
+    if (i >= count) {
+      elBatchProgress.style.display = 'none';
+      elBtnCancelBatch.style.display = 'none';
+      elBatchArea.style.display = 'block';
+      elBtnExport.style.display = 'inline-block';
+      renderBatchTable();
+      elBtnBatch.disabled = false;
+      elBtnBatchRandom.disabled = false;
+      elBtnGenerate.disabled = false;
+      elBtnRandom.disabled = false;
+      batchTimer = 0;
+      return;
     }
+    var end = Math.min(i + perFrame, count);
+    while (i < end) {
+      batchData.push(buildRecord(gender, year, month, day, regionCode, provinceName, cityName));
+      i++;
+    }
+    var pct = Math.round(i / count * 100);
+    elProgressFill.style.width = pct + '%';
+    elProgressText.textContent = i + ' / ' + count;
+    batchTimer = requestAnimationFrame(step);
   }
-  // 全部完成
-  elBatchProgress.style.display = 'none';
-  elBatchArea.style.display = 'block';
-  elBtnExport.style.display = 'inline-block';
-  renderBatchTable();
-  elBtnBatch.disabled = false;
-  elBtnBatchRandom.disabled = false;
-  elBtnGenerate.disabled = false;
-  elBtnRandom.disabled = false;
+  batchTimer = requestAnimationFrame(step);
 });
 
 /* --- 随机批量生成 --- */
@@ -877,27 +919,37 @@ elBtnBatchRandom.addEventListener('click', function() {
   elBtnGenerate.disabled = true;
   elBtnRandom.disabled = true;
   elBatchProgress.style.display = 'block';
+  elBtnCancelBatch.style.display = 'inline-block';
   elProgressFill.style.width = '0%';
   elProgressText.textContent = '0 / ' + count;
 
-  // 同步循环生成，每 50 条刷新一次进度
-  var throttle = Math.max(1, Math.floor(count / 100));
-  for (var i = 0; i < count; i++) {
-    batchData.push(randomBatchRecord());
-    if ((i + 1) % throttle === 0 || i === count - 1) {
-      elProgressFill.style.width = Math.round((i + 1) / count * 100) + '%';
-      elProgressText.textContent = (i + 1) + ' / ' + count;
+  var perFrame = Math.max(1, Math.floor(count / 60));
+  var i = 0;
+  function step() {
+    if (i >= count) {
+      elBatchProgress.style.display = 'none';
+      elBtnCancelBatch.style.display = 'none';
+      elBatchArea.style.display = 'block';
+      elBtnExport.style.display = 'inline-block';
+      renderBatchTable();
+      elBtnBatch.disabled = false;
+      elBtnBatchRandom.disabled = false;
+      elBtnGenerate.disabled = false;
+      elBtnRandom.disabled = false;
+      batchTimer = 0;
+      return;
     }
+    var end = Math.min(i + perFrame, count);
+    while (i < end) {
+      batchData.push(randomBatchRecord());
+      i++;
+    }
+    var pct = Math.round(i / count * 100);
+    elProgressFill.style.width = pct + '%';
+    elProgressText.textContent = i + ' / ' + count;
+    batchTimer = requestAnimationFrame(step);
   }
-  // 全部完成
-  elBatchProgress.style.display = 'none';
-  elBatchArea.style.display = 'block';
-  elBtnExport.style.display = 'inline-block';
-  renderBatchTable();
-  elBtnBatch.disabled = false;
-  elBtnBatchRandom.disabled = false;
-  elBtnGenerate.disabled = false;
-  elBtnRandom.disabled = false;
+  batchTimer = requestAnimationFrame(step);
 });
 
 elBtnExport.addEventListener('click', function() {
