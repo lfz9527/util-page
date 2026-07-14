@@ -224,6 +224,244 @@ const SURNAMES = [ "王","李","张","刘","陈","杨","黄","赵","周","吴","
 const MALE_NAMES = [ "伟","强","磊","军","勇","文","明","杰","涛","斌","辉","鹏","浩","峰","亮","超","波","刚","健","毅","俊","飞","宁","帅","旭","华","林","平","东","志","宏","海","建","国","宇","龙","博","松","瑞","凯","鑫","震","恒","义","清","哲","康","良","威","仁","云","诚","安","忠","庆","彬","富","信","光","天","达","广","生","思","厚","友","维","全","保","世","兴","源","和","延","士","福","之","道","德","山","川","根","柱","喜","立","永","才","正","玉","春","秋","炎","盛","雄","善","舜","谦","豪","英","朗","锐","腾","景","仕","易","知","合","柏","腾","乾","启","承","修","铭","泽","恩","冠","宸","敬","贤","尚","尊","驰","鸣","弘","绍","庭","晋","卫","守","栩","颢","瑾","玮","骏","邦","颂","祯","琨","敖","晏","长","沛","宣","赫","翊","昭","朔","麒" ];
 
 const FEMALE_NAMES = [ "芳","秀","英","丽","敏","静","婷","雪","娟","艳","萍","红","霞","玲","娜","燕","琴","文","梅","云","华","兰","凤","洁","春","慧","佳","蕾","莉","晶","蓉","丹","芬","颖","欣","雨","瑶","倩","月","媛","仪","君","艺","莹","曼","悦","菲","梦","婉","柔","安","宁","馨","怡","诗","琪","雅","琳","思","晓","美","然","盈","若","竹","含","烟","荷","彤","萱","碧","采","雁","真","巧","环","翠","婵","妃","沁","淑","惠","菁","贞","苑","利","伊","凡","之","如","珠","爱","蕊","淼","宜","妍","勤","叶","枫","灵","绿","夏","秋","冬","寒","冰","凝","语","言","画","白","紫","蓝","青","幼","代","双","山","水","天","香","惜","问","依","妙","寻","谷","向","映","新","书","智","可","姿","琼","璐","薇","蔷","瑰" ];
-</script>
+
+/* ========== 核心生成逻辑 ========== */
+
+/** 计算身份证第 18 位校验码（GB 11643 / ISO 7064:1983 MOD 11-2） */
+function calcChecksum(id17) {
+  const weights = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2];
+  const checkMap = ['1', '0', 'X', '9', '8', '7', '6', '5', '4', '3', '2'];
+  let sum = 0;
+  for (let i = 0; i < 17; i++) { sum += parseInt(id17[i], 10) * weights[i]; }
+  return checkMap[sum % 11];
+}
+
+/** 生成 3 位顺序码，第 3 位奇偶匹配性别 */
+function generateSequenceCode(gender) {
+  const prefix = String(Math.floor(Math.random() * 100)).padStart(2, '0');
+  const oddDigits = [1, 3, 5, 7, 9];
+  const evenDigits = [0, 2, 4, 6, 8];
+  const pool = gender === 'male' ? oddDigits : evenDigits;
+  const last = pool[Math.floor(Math.random() * pool.length)];
+  return prefix + last;
+}
+
+/** 根据性别随机生成中文姓名 */
+function generateName(gender) {
+  const surname = SURNAMES[Math.floor(Math.random() * SURNAMES.length)];
+  const namePool = gender === 'male' ? MALE_NAMES : FEMALE_NAMES;
+  const count = Math.random() < 0.5 ? 1 : 2;
+  let givenName = '';
+  const used = new Set();
+  for (let i = 0; i < count; i++) {
+    let ch;
+    do { ch = namePool[Math.floor(Math.random() * namePool.length)]; } while (used.has(ch));
+    used.add(ch);
+    givenName += ch;
+  }
+  return surname + givenName;
+}
+
+/** 生成完整 18 位身份证号 */
+function generateIdNumber(regionCode, birth, gender) {
+  const id17 = regionCode + birth + generateSequenceCode(gender);
+  return id17 + calcChecksum(id17);
+}
+
+/* ========== UI 交互 ========== */
+const $ = (id) => document.getElementById(id);
+
+const elProvince = $('province');
+const elCity = $('city');
+const elDistrict = $('district');
+const elYear = $('year');
+const elMonth = $('month');
+const elDay = $('day');
+const elGender = $('gender');
+const elBtnGenerate = $('btn-generate');
+const elHintAddress = $('hint-address');
+const elResultContainer = $('result-container');
+
+/* --- 地区三级联动 --- */
+function initProvinces() {
+  elProvince.innerHTML = '<option value="">请选择省</option>';
+  for (const name of Object.keys(REGION_DATA)) {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    elProvince.appendChild(opt);
+  }
+}
+
+function onProvinceChange() {
+  const provinceName = elProvince.value;
+  elCity.innerHTML = '<option value="">请选择市</option>';
+  elDistrict.innerHTML = '<option value="">请选择区</option>';
+  elDistrict.disabled = true;
+  elBtnGenerate.disabled = true;
+  elHintAddress.classList.add('visible');
+  if (!provinceName) { elCity.disabled = true; return; }
+  elCity.disabled = false;
+  const cities = REGION_DATA[provinceName].cities;
+  for (const name of Object.keys(cities)) {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    elCity.appendChild(opt);
+  }
+}
+
+function onCityChange() {
+  const provinceName = elProvince.value;
+  const cityName = elCity.value;
+  elDistrict.innerHTML = '<option value="">请选择区</option>';
+  elBtnGenerate.disabled = true;
+  elHintAddress.classList.add('visible');
+  if (!cityName) { elDistrict.disabled = true; return; }
+  elDistrict.disabled = false;
+  const districts = REGION_DATA[provinceName].cities[cityName].districts;
+  for (const [name, code] of Object.entries(districts)) {
+    const opt = document.createElement('option');
+    opt.value = code;
+    opt.textContent = name;
+    elDistrict.appendChild(opt);
+  }
+}
+
+function onDistrictChange() {
+  if (elDistrict.value) {
+    elBtnGenerate.disabled = false;
+    elHintAddress.classList.remove('visible');
+  } else {
+    elBtnGenerate.disabled = true;
+    elHintAddress.classList.add('visible');
+  }
+}
+
+elProvince.addEventListener('change', onProvinceChange);
+elCity.addEventListener('change', onCityChange);
+elDistrict.addEventListener('change', onDistrictChange);
+
+/* --- 日期选择器 --- */
+const currentYear = new Date().getFullYear();
+
+function isLeapYear(year) {
+  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+}
+
+function getDaysInMonth(year, month) {
+  const days = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  if (month === 2 && isLeapYear(year)) return 29;
+  return days[month - 1];
+}
+
+function initYears() {
+  for (let y = currentYear; y >= 1949; y--) {
+    const opt = document.createElement('option');
+    opt.value = y;
+    opt.textContent = y;
+    elYear.appendChild(opt);
+  }
+}
+
+function initMonths() {
+  for (let m = 1; m <= 12; m++) {
+    const opt = document.createElement('option');
+    opt.value = m;
+    opt.textContent = String(m).padStart(2, '0');
+    elMonth.appendChild(opt);
+  }
+}
+
+function refreshDays() {
+  const year = parseInt(elYear.value, 10);
+  const month = parseInt(elMonth.value, 10);
+  const selectedDay = elDay.value;
+  const maxDay = getDaysInMonth(year, month);
+  elDay.innerHTML = '';
+  for (let d = 1; d <= maxDay; d++) {
+    const opt = document.createElement('option');
+    opt.value = d;
+    opt.textContent = String(d).padStart(2, '0');
+    elDay.appendChild(opt);
+  }
+  if (selectedDay && parseInt(selectedDay, 10) <= maxDay) { elDay.value = selectedDay; }
+}
+
+elYear.addEventListener('change', refreshDays);
+elMonth.addEventListener('change', refreshDays);
+
+/* --- 结果渲染 --- */
+function renderResult() {
+  const gender = elGender.value;
+  const year = elYear.value;
+  const month = String(elMonth.value).padStart(2, '0');
+  const day = String(elDay.value).padStart(2, '0');
+  const birth = year + month + day;
+  const regionCode = elDistrict.value;
+  const provinceName = elProvince.value;
+  const cityName = elCity.value;
+  const districts = REGION_DATA[provinceName].cities[cityName].districts;
+  const districtName = Object.keys(districts).find(k => districts[k] === regionCode);
+  const fullAddress = provinceName + cityName + districtName;
+  const idNumber = generateIdNumber(regionCode, birth, gender);
+  const name = generateName(gender);
+  const genderText = gender === 'male' ? '男' : '女';
+
+  elResultContainer.innerHTML =
+    '<div class="result-item"><span class="result-label">姓名</span><span class="result-value">' + name + '</span></div>' +
+    '<div class="result-item"><span class="result-label">性别</span><span class="result-value">' + genderText + '</span></div>' +
+    '<div class="result-item"><span class="result-label">民族</span><span class="result-value">汉族</span></div>' +
+    '<div class="result-item"><span class="result-label">出生日期</span><span class="result-value">' + year + '年' + month + '月' + day + '日</span></div>' +
+    '<div class="result-item"><span class="result-label">住址</span><span class="result-value">' + fullAddress + '</span></div>' +
+    '<div class="result-item"><span class="result-label">身份证号</span><span class="result-value id-number">' + idNumber + '</span><button class="btn-copy" onclick="copyIdNumber(this,\'' + idNumber + '\')">复制</button></div>';
+}
+
+elBtnGenerate.addEventListener('click', renderResult);
+
+/* --- 复制功能 --- */
+function copyIdNumber(btn, idNumber) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(idNumber).then(function() { showCopied(btn); }).catch(function() { fallbackCopy(btn, idNumber); });
+  } else {
+    fallbackCopy(btn, idNumber);
+  }
+}
+
+function showCopied(btn) {
+  btn.textContent = '已复制';
+  btn.classList.add('copied');
+  setTimeout(function() { btn.textContent = '复制'; btn.classList.remove('copied'); }, 1500);
+}
+
+function fallbackCopy(btn, idNumber) {
+  var range = document.createRange();
+  var textNode = btn.parentElement.querySelector('.id-number');
+  range.selectNodeContents(textNode);
+  var sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+  showCopied(btn);
+  setTimeout(function() { sel.removeAllRanges(); }, 1500);
+}
+
+/* --- 初始化 & 默认值 --- */
+initProvinces();
+initYears();
+initMonths();
+refreshDays();
+
+elGender.value = 'male';
+elYear.value = '1990';
+elMonth.value = '1';
+refreshDays();
+elDay.value = '1';
+elProvince.value = '北京市';
+onProvinceChange();
+elCity.value = '市辖区';
+onCityChange();
+elDistrict.value = '110101';
+onDistrictChange();
+renderResult();</script>
 </body>
 </html>
