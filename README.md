@@ -15,6 +15,8 @@
 
 浏览器直接打开 `idcard-generator.html` 即可，零依赖。
 
+在线访问：<a href="https://lfz9527.github.io/util-page/idcard-generator.html" target="_blank">身份证生成器</a>
+
 ## 免责声明
 
 本工具仅用于软件测试、数据模拟等合法用途。生成的身份证号码、姓名均为虚拟数据，请勿用于非法目的。
