@@ -54,7 +54,8 @@ body {
   color: #666;
 }
 .form-select, .form-input {
-  flex: 1;
+  flex: 1 1 0%;
+  min-width: 0;
   height: 38px;
   padding: 0 12px;
   border: 1px solid #d9d9d9;
@@ -101,6 +102,140 @@ body {
   display: none;
 }
 .hint-address.visible { display: block; }
+
+/* 批量生成 */
+.batch-divider {
+  border: none;
+  border-top: 1px dashed #e8e8e8;
+  margin: 20px 0 16px;
+}
+.batch-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.batch-label {
+  font-size: 14px;
+  color: #666;
+  flex-shrink: 0;
+}
+.batch-quantity {
+  width: 80px;
+  height: 36px;
+  padding: 0 8px;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  font-size: 14px;
+  text-align: center;
+  outline: none;
+}
+.batch-quantity:focus { border-color: #1677ff; }
+.btn-batch {
+  height: 36px;
+  padding: 0 16px;
+  border: 1px solid #1677ff;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #1677ff;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-batch:hover { color: #4096ff; border-color: #4096ff; }
+.btn-batch:disabled {
+  color: #d9d9d9;
+  border-color: #d9d9d9;
+  cursor: not-allowed;
+}
+
+/* 进度条 */
+.progress-bar {
+  height: 6px;
+  background: #f0f0f0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: #1677ff;
+  border-radius: 3px;
+  transition: width 0.15s;
+}
+.progress-text {
+  font-size: 12px;
+  color: #999;
+  text-align: center;
+  margin-top: 4px;
+}
+
+/* 字段选择 */
+.field-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 16px;
+}
+.field-checks label {
+  font-size: 13px;
+  color: #666;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 批量结果表格 */
+.batch-table-wrap {
+  max-height: 400px;
+  overflow: auto;
+  margin-bottom: 16px;
+}
+.batch-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.batch-table th,
+.batch-table td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid #f0f0f0;
+  white-space: nowrap;
+}
+.batch-table th {
+  color: #999;
+  font-weight: 500;
+  background: #fafafa;
+  position: sticky;
+  top: 0;
+}
+.batch-table td.id-col {
+  font-family: "SF Mono", "Menlo", "Consolas", monospace;
+  font-size: 13px;
+}
+.batch-empty {
+  text-align: center;
+  color: #bbb;
+  padding: 20px 0;
+  font-size: 14px;
+}
+
+/* 导出按钮 */
+.btn-export {
+  height: 36px;
+  padding: 0 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #fff;
+  background: #52c41a;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-export:hover { background: #73d13d; }
 
 /* 结果卡片 */
 .result-item {
@@ -208,6 +343,18 @@ body {
 
     <button id="btn-generate" class="btn-generate" disabled>生成身份证</button>
     <p id="hint-address" class="hint-address">请先选择完整地址</p>
+
+    <hr class="batch-divider">
+    <div class="batch-row">
+      <span class="batch-label">批量生成</span>
+      <input type="number" id="batch-count" class="batch-quantity" value="10" min="1" max="100">
+      <span class="batch-label" style="font-size:13px;color:#999">条</span>
+      <button id="btn-batch" class="btn-batch" disabled>批量生成</button>
+    </div>
+    <div id="batch-progress" style="display:none;margin-top:12px">
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+      <div class="progress-text" id="progress-text">0 / 10</div>
+    </div>
   </div>
 
   <!-- 结果卡片 -->
@@ -215,6 +362,25 @@ body {
     <div class="card-title">生成结果</div>
     <div id="result-container">
       <div class="result-empty">点击上方「生成身份证」按钮查看结果</div>
+    </div>
+
+    <div class="field-checks" id="field-checks" style="display:none;margin-top:16px">
+      <label><input type="checkbox" class="export-field" value="name" checked>姓名</label>
+      <label><input type="checkbox" class="export-field" value="gender" checked>性别</label>
+      <label><input type="checkbox" class="export-field" value="ethnicity" checked>民族</label>
+      <label><input type="checkbox" class="export-field" value="birth" checked>出生日期</label>
+      <label><input type="checkbox" class="export-field" value="address" checked>住址</label>
+      <label><input type="checkbox" class="export-field" value="idNumber" checked>身份证号</label>
+    </div>
+
+    <div id="batch-table-area" style="display:none">
+      <div class="batch-table-wrap">
+        <table class="batch-table" id="batch-table">
+          <thead><tr></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <button class="btn-export" id="btn-export">导出 JSON</button>
     </div>
   </div>
 
@@ -313,8 +479,18 @@ const elMonth = $('month');
 const elDay = $('day');
 const elGender = $('gender');
 const elBtnGenerate = $('btn-generate');
+const elBtnBatch = $('btn-batch');
+const elBatchCount = $('batch-count');
 const elHintAddress = $('hint-address');
 const elResultContainer = $('result-container');
+const elFieldChecks = $('field-checks');
+const elBatchArea = $('batch-table-area');
+const elBatchTable = $('batch-table');
+const elBtnExport = $('btn-export');
+const elBatchProgress = $('batch-progress');
+const elProgressFill = $('progress-fill');
+const elProgressText = $('progress-text');
+let batchData = [];
 
 /* --- 地区三级联动 --- */
 function initProvinces() {
@@ -365,9 +541,11 @@ function onCityChange() {
 function onDistrictChange() {
   if (elDistrict.value) {
     elBtnGenerate.disabled = false;
+    elBtnBatch.disabled = false;
     elHintAddress.classList.remove('visible');
   } else {
     elBtnGenerate.disabled = true;
+    elBtnBatch.disabled = true;
     elHintAddress.classList.add('visible');
   }
 }
@@ -449,6 +627,11 @@ function renderResult() {
     '<div class="result-item"><span class="result-label">民族</span><span class="result-value">汉族</span></div>' +
     '<div class="result-item"><span class="result-label">出生日期</span><span class="result-value">' + year + '年' + month + '月' + day + '日</span></div>' +
     '<div class="result-item"><span class="result-label">住址</span><span class="result-value">' + fullAddress + '</span></div>';
+  // 切换到单条结果视图
+  elResultContainer.style.display = 'block';
+  elFieldChecks.style.display = 'none';
+  elBatchArea.style.display = 'none';
+  batchData = [];
 }
 
 elBtnGenerate.addEventListener('click', renderResult);
@@ -496,6 +679,133 @@ elCity.value = '市辖区';
 onCityChange();
 elDistrict.value = '110101';
 onDistrictChange();
-renderResult();</script>
+renderResult();
+
+/* --- 批量生成 --- */
+
+function buildRecord(gender, year, month, day, regionCode, provinceName, cityName) {
+  const districts = REGION_DATA[provinceName].cities[cityName].districts;
+  const districtName = Object.keys(districts).find(function(k) { return districts[k] === regionCode; });
+  const birth = year + month.padStart(2, '0') + day.padStart(2, '0');
+  return {
+    name: generateName(gender),
+    gender: gender === 'male' ? '男' : '女',
+    ethnicity: '汉族',
+    birth: year + '年' + month + '月' + day + '日',
+    address: provinceName + cityName + districtName,
+    idNumber: generateIdNumber(regionCode, birth, gender)
+  };
+}
+
+function renderBatchTable() {
+  // 获取用户选中的导出字段
+  var checked = document.querySelectorAll('.export-field:checked');
+  var fields = [];
+  checked.forEach(function(cb) { fields.push(cb.value); });
+  if (fields.length === 0) {
+    elBatchTable.querySelector('thead tr').innerHTML = '';
+    elBatchTable.querySelector('tbody').innerHTML = '<tr><td colspan="1" style="text-align:center;color:#bbb;padding:16px">请至少选择一个导出字段</td></tr>';
+    return;
+  }
+
+  var fieldLabels = { name:'姓名', gender:'性别', ethnicity:'民族', birth:'出生日期', address:'住址', idNumber:'身份证号' };
+  var hl = '';
+  fields.forEach(function(f) { hl += '<th>' + fieldLabels[f] + '</th>'; });
+  elBatchTable.querySelector('thead tr').innerHTML = hl;
+
+  var tb = '';
+  batchData.forEach(function(r) {
+    tb += '<tr>';
+    fields.forEach(function(f) {
+      if (f === 'idNumber') {
+        tb += '<td class="id-col">' + r[f] + '</td>';
+      } else {
+        tb += '<td>' + r[f] + '</td>';
+      }
+    });
+    tb += '</tr>';
+  });
+  elBatchTable.querySelector('tbody').innerHTML = tb;
+}
+
+// 字段 checkbox 变化时刷新表格列
+document.querySelectorAll('.export-field').forEach(function(cb) {
+  cb.addEventListener('change', function() {
+    if (batchData.length > 0) { renderBatchTable(); }
+  });
+});
+
+elBtnBatch.addEventListener('click', function() {
+  var gender = elGender.value;
+  var year = elYear.value;
+  var month = elMonth.value;
+  var day = elDay.value;
+  var regionCode = elDistrict.value;
+  var provinceName = elProvince.value;
+  var cityName = elCity.value;
+  var count = parseInt(elBatchCount.value, 10) || 10;
+  if (count < 1) count = 1;
+  if (count > 100) count = 100;
+  elBatchCount.value = count;
+
+  batchData = [];
+  elResultContainer.style.display = 'none';
+  elFieldChecks.style.display = 'flex';
+  elBatchArea.style.display = 'none';
+  elBtnBatch.disabled = true;
+  elBatchProgress.style.display = 'block';
+  elProgressFill.style.width = '0%';
+  elProgressText.textContent = '0 / ' + count;
+
+  var i = 0;
+  function step() {
+    if (i >= count) {
+      // 全部完成，显示下载按钮
+      elBatchProgress.style.display = 'none';
+      elBatchArea.style.display = 'block';
+      elBtnExport.style.display = 'inline-block';
+      renderBatchTable();
+      elBtnBatch.disabled = false;
+      return;
+    }
+    batchData.push(buildRecord(gender, year, month, day, regionCode, provinceName, cityName));
+    i++;
+    var pct = Math.round(i / count * 100);
+    elProgressFill.style.width = pct + '%';
+    elProgressText.textContent = i + ' / ' + count;
+    setTimeout(step, 30);
+  }
+  step();
+});
+
+elBtnExport.addEventListener('click', function() {
+  var checked = document.querySelectorAll('.export-field:checked');
+  var fields = [];
+  checked.forEach(function(cb) { fields.push(cb.value); });
+  if (fields.length === 0) return;
+
+  var out = batchData.map(function(r) {
+    var obj = {};
+    fields.forEach(function(f) { obj[f] = r[f]; });
+    return obj;
+  });
+
+  var now = new Date();
+  var ts = now.getFullYear()
+    + String(now.getMonth() + 1).padStart(2, '0')
+    + String(now.getDate()).padStart(2, '0')
+    + 'T'
+    + String(now.getHours()).padStart(2, '0')
+    + String(now.getMinutes()).padStart(2, '0')
+    + String(now.getSeconds()).padStart(2, '0');
+  var filename = '身份证-' + ts + '.json';
+  var json = JSON.stringify(out, null, 2);
+  var blob = new Blob([json], { type: 'application/json' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+});</script>
 </body>
 </html>
