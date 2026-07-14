@@ -509,6 +509,7 @@ function onProvinceChange() {
   elDistrict.innerHTML = '<option value="">请选择区</option>';
   elDistrict.disabled = true;
   elBtnGenerate.disabled = true;
+  elBtnBatch.disabled = true;
   elHintAddress.classList.add('visible');
   if (!provinceName) { elCity.disabled = true; return; }
   elCity.disabled = false;
@@ -526,6 +527,7 @@ function onCityChange() {
   const cityName = elCity.value;
   elDistrict.innerHTML = '<option value="">请选择区</option>';
   elBtnGenerate.disabled = true;
+  elBtnBatch.disabled = true;
   elHintAddress.classList.add('visible');
   if (!cityName) { elDistrict.disabled = true; return; }
   elDistrict.disabled = false;
