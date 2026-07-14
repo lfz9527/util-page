@@ -374,6 +374,7 @@ body {
       <input type="number" id="batch-count" class="batch-quantity" value="10" min="1">
       <span class="batch-label" style="font-size:13px;color:#999">条</span>
       <button id="btn-batch" class="btn-batch" disabled>批量生成</button>
+      <button id="btn-batch-random" class="btn-batch" disabled>随机批量</button>
     </div>
     <div id="batch-progress" style="display:none;margin-top:12px">
       <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
@@ -504,6 +505,7 @@ const elDay = $('day');
 const elGender = $('gender');
 const elBtnGenerate = $('btn-generate');
 const elBtnBatch = $('btn-batch');
+const elBtnBatchRandom = $('btn-batch-random');
 const elBatchCount = $('batch-count');
 const elHintAddress = $('hint-address');
 const elResultContainer = $('result-container');
@@ -534,6 +536,7 @@ function onProvinceChange() {
   elDistrict.disabled = true;
   elBtnGenerate.disabled = true;
   elBtnBatch.disabled = true;
+  elBtnBatchRandom.disabled = true;
   elHintAddress.classList.add('visible');
   if (!provinceName) { elCity.disabled = true; return; }
   elCity.disabled = false;
@@ -552,6 +555,7 @@ function onCityChange() {
   elDistrict.innerHTML = '<option value="">请选择区</option>';
   elBtnGenerate.disabled = true;
   elBtnBatch.disabled = true;
+  elBtnBatchRandom.disabled = true;
   elHintAddress.classList.add('visible');
   if (!cityName) { elDistrict.disabled = true; return; }
   elDistrict.disabled = false;
@@ -568,10 +572,12 @@ function onDistrictChange() {
   if (elDistrict.value) {
     elBtnGenerate.disabled = false;
     elBtnBatch.disabled = false;
+    elBtnBatchRandom.disabled = false;
     elHintAddress.classList.remove('visible');
   } else {
     elBtnGenerate.disabled = true;
     elBtnBatch.disabled = true;
+    elBtnBatchRandom.disabled = true;
     elHintAddress.classList.add('visible');
   }
 }
@@ -811,6 +817,7 @@ elBtnBatch.addEventListener('click', function() {
   elFieldChecks.style.display = 'flex';
   elBatchArea.style.display = 'none';
   elBtnBatch.disabled = true;
+  elBtnBatchRandom.disabled = true;
   elBtnGenerate.disabled = true;
   elBatchProgress.style.display = 'block';
   elProgressFill.style.width = '0%';
@@ -825,10 +832,67 @@ elBtnBatch.addEventListener('click', function() {
       elBtnExport.style.display = 'inline-block';
       renderBatchTable();
       elBtnBatch.disabled = false;
+      elBtnBatchRandom.disabled = false;
       elBtnGenerate.disabled = false;
       return;
     }
     batchData.push(buildRecord(gender, year, month, day, regionCode, provinceName, cityName));
+    i++;
+    var pct = Math.round(i / count * 100);
+    elProgressFill.style.width = pct + '%';
+    elProgressText.textContent = i + ' / ' + count;
+    setTimeout(step, 30);
+  }
+  step();
+});
+
+/* --- 随机批量生成 --- */
+function randomBatchRecord() {
+  var gender = Math.random() < 0.5 ? 'male' : 'female';
+  var year = String(1949 + Math.floor(Math.random() * (currentYear - 1949 + 1)));
+  var month = String(1 + Math.floor(Math.random() * 12));
+  var maxDay = getDaysInMonth(parseInt(year, 10), parseInt(month, 10));
+  var day = String(1 + Math.floor(Math.random() * maxDay));
+
+  var provinceNames = Object.keys(REGION_DATA);
+  var prov = randomPick(provinceNames);
+  var cityNames = Object.keys(REGION_DATA[prov].cities);
+  var city = randomPick(cityNames);
+  var districtEntries = Object.entries(REGION_DATA[prov].cities[city].districts);
+  var district = randomPick(districtEntries);
+
+  return buildRecord(gender, year, month, day, district[1], prov, city);
+}
+
+elBtnBatchRandom.addEventListener('click', function() {
+  var count = parseInt(elBatchCount.value, 10) || 10;
+  if (count < 1) count = 1;
+  elBatchCount.value = count;
+
+  batchData = [];
+  elResultContainer.style.display = 'none';
+  elFieldChecks.style.display = 'flex';
+  elBatchArea.style.display = 'none';
+  elBtnBatch.disabled = true;
+  elBtnBatchRandom.disabled = true;
+  elBtnGenerate.disabled = true;
+  elBatchProgress.style.display = 'block';
+  elProgressFill.style.width = '0%';
+  elProgressText.textContent = '0 / ' + count;
+
+  var i = 0;
+  function step() {
+    if (i >= count) {
+      elBatchProgress.style.display = 'none';
+      elBatchArea.style.display = 'block';
+      elBtnExport.style.display = 'inline-block';
+      renderBatchTable();
+      elBtnBatch.disabled = false;
+      elBtnBatchRandom.disabled = false;
+      elBtnGenerate.disabled = false;
+      return;
+    }
+    batchData.push(randomBatchRecord());
     i++;
     var pct = Math.round(i / count * 100);
     elProgressFill.style.width = pct + '%';
