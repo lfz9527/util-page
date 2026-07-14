@@ -189,6 +189,19 @@ body {
   text-align: center;
   margin-top: 4px;
 }
+.btn-cancel-batch {
+  display: block;
+  margin: 8px auto 0;
+  padding: 4px 16px;
+  border: 1px solid #ff4d4f;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #ff4d4f;
+  background: #fff2f0;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-cancel-batch:hover { background: #ffd8d6; }
 
 /* 字段选择 */
 .field-checks {
@@ -379,6 +392,7 @@ body {
     <div id="batch-progress" style="display:none;margin-top:12px">
       <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
       <div class="progress-text" id="progress-text">0 / 10</div>
+      <button id="btn-cancel-batch" class="btn-cancel-batch" style="display:none">取消</button>
     </div>
   </div>
 
@@ -386,7 +400,7 @@ body {
   <div class="card" id="result-card">
     <div class="card-title">生成结果</div>
     <div id="result-container">
-      <div class="result-empty">点击上方「生成身份证」按钮查看结果</div>
+      <div class="result-empty">点击按钮生成身份证信息</div>
     </div>
 
     <div class="field-checks" id="field-checks" style="display:none;margin-top:16px">
@@ -517,7 +531,9 @@ const elBtnExport = $('btn-export');
 const elBatchProgress = $('batch-progress');
 const elProgressFill = $('progress-fill');
 const elProgressText = $('progress-text');
+const elBtnCancelBatch = $('btn-cancel-batch');
 let batchData = [];
+let batchTimer = 0; // setTimeout id, 用于取消批量生成
 
 /* --- 地区三级联动 --- */
 function initProvinces() {
@@ -801,6 +817,22 @@ document.querySelectorAll('.export-field').forEach(function(cb) {
   });
 });
 
+/* --- 取消批量 --- */
+function cancelBatch() {
+  clearTimeout(batchTimer);
+  batchTimer = 0;
+  elBatchProgress.style.display = 'none';
+  elBtnCancelBatch.style.display = 'none';
+  elResultContainer.style.display = 'block';
+  elFieldChecks.style.display = 'none';
+  elBatchArea.style.display = 'none';
+  elBtnGenerate.disabled = false;
+  elBtnRandom.disabled = false;
+  elBtnBatch.disabled = false;
+  elBtnBatchRandom.disabled = false;
+}
+elBtnCancelBatch.addEventListener('click', cancelBatch);
+
 elBtnBatch.addEventListener('click', function() {
   var gender = elGender.value;
   var year = elYear.value;
@@ -822,6 +854,7 @@ elBtnBatch.addEventListener('click', function() {
   elBtnGenerate.disabled = true;
   elBtnRandom.disabled = true;
   elBatchProgress.style.display = 'block';
+  elBtnCancelBatch.style.display = 'inline-block';
   elProgressFill.style.width = '0%';
   elProgressText.textContent = '0 / ' + count;
 
@@ -830,6 +863,7 @@ elBtnBatch.addEventListener('click', function() {
     if (i >= count) {
       // 全部完成，显示下载按钮
       elBatchProgress.style.display = 'none';
+      elBtnCancelBatch.style.display = 'none';
       elBatchArea.style.display = 'block';
       elBtnExport.style.display = 'inline-block';
       renderBatchTable();
@@ -837,6 +871,7 @@ elBtnBatch.addEventListener('click', function() {
       elBtnBatchRandom.disabled = false;
       elBtnGenerate.disabled = false;
       elBtnRandom.disabled = false;
+      batchTimer = 0;
       return;
     }
     batchData.push(buildRecord(gender, year, month, day, regionCode, provinceName, cityName));
@@ -844,7 +879,7 @@ elBtnBatch.addEventListener('click', function() {
     var pct = Math.round(i / count * 100);
     elProgressFill.style.width = pct + '%';
     elProgressText.textContent = i + ' / ' + count;
-    setTimeout(step, 30);
+    batchTimer = setTimeout(step, 30);
   }
   step();
 });
@@ -881,6 +916,7 @@ elBtnBatchRandom.addEventListener('click', function() {
   elBtnGenerate.disabled = true;
   elBtnRandom.disabled = true;
   elBatchProgress.style.display = 'block';
+  elBtnCancelBatch.style.display = 'inline-block';
   elProgressFill.style.width = '0%';
   elProgressText.textContent = '0 / ' + count;
 
@@ -888,6 +924,7 @@ elBtnBatchRandom.addEventListener('click', function() {
   function step() {
     if (i >= count) {
       elBatchProgress.style.display = 'none';
+      elBtnCancelBatch.style.display = 'none';
       elBatchArea.style.display = 'block';
       elBtnExport.style.display = 'inline-block';
       renderBatchTable();
@@ -895,6 +932,7 @@ elBtnBatchRandom.addEventListener('click', function() {
       elBtnBatchRandom.disabled = false;
       elBtnGenerate.disabled = false;
       elBtnRandom.disabled = false;
+      batchTimer = 0;
       return;
     }
     batchData.push(randomBatchRecord());
@@ -902,7 +940,7 @@ elBtnBatchRandom.addEventListener('click', function() {
     var pct = Math.round(i / count * 100);
     elProgressFill.style.width = pct + '%';
     elProgressText.textContent = i + ' / ' + count;
-    setTimeout(step, 30);
+    batchTimer = setTimeout(step, 30);
   }
   step();
 });
