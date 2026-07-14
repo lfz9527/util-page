@@ -77,7 +77,7 @@ body {
 
 /* 生成按钮 */
 .btn-generate {
-  width: 100%;
+  flex: 1;
   height: 44px;
   margin-top: 20px;
   border: none;
@@ -94,6 +94,27 @@ body {
   background: #d9d9d9;
   color: #999;
   cursor: not-allowed;
+}
+.btn-row {
+  display: flex;
+  gap: 10px;
+}
+.btn-random {
+  flex: 1;
+  height: 44px;
+  margin-top: 20px;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #666;
+  background: #fafafa;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-random:hover {
+  border-color: #1677ff;
+  color: #1677ff;
+  background: #f0f5ff;
 }
 .hint-address {
   font-size: 12px;
@@ -341,13 +362,16 @@ body {
       <select id="district" class="form-select" disabled><option value="">请选择区</option></select>
     </div>
 
-    <button id="btn-generate" class="btn-generate" disabled>生成身份证</button>
+    <div class="btn-row">
+      <button id="btn-generate" class="btn-generate" disabled>生成身份证</button>
+      <button id="btn-random" class="btn-random">随机生成</button>
+    </div>
     <p id="hint-address" class="hint-address">请先选择完整地址</p>
 
     <hr class="batch-divider">
     <div class="batch-row">
       <span class="batch-label">批量生成</span>
-      <input type="number" id="batch-count" class="batch-quantity" value="10" min="1" max="100">
+      <input type="number" id="batch-count" class="batch-quantity" value="10" min="1">
       <span class="batch-label" style="font-size:13px;color:#999">条</span>
       <button id="btn-batch" class="btn-batch" disabled>批量生成</button>
     </div>
@@ -638,6 +662,39 @@ function renderResult() {
 
 elBtnGenerate.addEventListener('click', renderResult);
 
+/* --- 随机生成 --- */
+function randomPick(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+$('btn-random').addEventListener('click', function() {
+  // 随机性别
+  elGender.value = Math.random() < 0.5 ? 'male' : 'female';
+
+  // 随机出生日期
+  elYear.value = 1949 + Math.floor(Math.random() * (currentYear - 1949 + 1));
+  elMonth.value = 1 + Math.floor(Math.random() * 12);
+  refreshDays();
+
+  // 随机地区
+  var provinceNames = Object.keys(REGION_DATA);
+  var prov = randomPick(provinceNames);
+  elProvince.value = prov;
+  onProvinceChange();
+
+  var cityNames = Object.keys(REGION_DATA[prov].cities);
+  var city = randomPick(cityNames);
+  elCity.value = city;
+  onCityChange();
+
+  var districtEntries = Object.entries(REGION_DATA[prov].cities[city].districts);
+  var district = randomPick(districtEntries);
+  elDistrict.value = district[1]; // 地址码
+  onDistrictChange();
+
+  renderResult();
+});
+
 /* --- 复制功能 --- */
 function copyIdNumber(btn, idNumber) {
   if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -747,7 +804,6 @@ elBtnBatch.addEventListener('click', function() {
   var cityName = elCity.value;
   var count = parseInt(elBatchCount.value, 10) || 10;
   if (count < 1) count = 1;
-  if (count > 100) count = 100;
   elBatchCount.value = count;
 
   batchData = [];
